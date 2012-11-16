@@ -15,23 +15,48 @@ import sqlite3
 import datetime
 
 
+class note:
+	#### warning: no check if init fails
+	def __init__(self, title, content=0, writing_date=0, event_date=0):
+		self.title = ''
+		self.content = ''
+		self.writing_date = ''
+		self.event_date = ''
+		# content=0 -> a touple is given, on "title" variable
+		if content==0:
+			if len(title) >= 4:
+				self.title = title[0]
+				self.content = title[1]
+				self.writing_date = title[2]
+				self.event_date = title[3]
+		else:
+			self.title = title
+			self.content = content
+			self.writing_date = writing_date
+			self.event_date = event_date
+
+
 class diary:
 	def __init__(self, dbname, username, userbirthday=''):
 		'''Inits the db connection.'''
 		self.user  = username
 		self.birth = userbirthday
-		self.conn  = self.connect(dbname)
+		self.conn  = self.connect(dbname)	# gives a connection to the sqlite db
 		if not self.conn:
 			raise Exception('DB error.')
+		self.cursor= self.conn.cursor()		# for fetching sqlite's statements results
+		
 		id = self.get_userid(username)
 		if id < 0:
 			self.create_user(username, userbirthday)
 			id = self.get_userid(username)
 		self.id = id
 		
+	
 	def __exit__(self):
 		'''Close the db connection on object destruction.'''
 		self.conn.close()	
+	
 	
 	def check_db(self, conn):
 		'''Executes simple queries to db, in order
@@ -40,18 +65,23 @@ class diary:
 			conn.execute('SELECT * FROM user')
 			conn.execute('SELECT * FROM note')
 			return True
-		except sqlite3.Error, e:
+		except sqlite3.Error as e:
+			print e
 			return False
+	
 	
 	def connect(self, dbname):
 		'''Connects and test if the database is
 		properly configured.'''
-		conn = sqlite3.connect(dbname) # if db doesn't exist it creates a new one
+		# if dbname db doesn't exist it creates a new one
+		conn = sqlite3.connect(dbname, check_same_thread = False)
+		# if db is not properly structured, it inits its tables' columns
 		if not self.check_db(conn):
 			self.create_db(conn)
 			if not self.check_db(conn):
 				return False
 		return conn
+	
 	
 	def create_db(self,conn):
 		'''Creates the tables on the given sqlite
@@ -71,6 +101,7 @@ class diary:
 		except:
 			raise
 	
+	
 	def create_user(self, username, userbirthday):
 		'''Inserts a new user into the database.'''
 		self.conn.execute('''INSERT INTO user VALUES (?, ?)''',
@@ -78,24 +109,37 @@ class diary:
 		self.conn.commit()
 		
 	
-	def get_events(self, date=''):
-		'''Returns all events of the given date. If no date
-		is given, today's events are returned.'''
+	def get_notes(self, type, date=''):
+		'''Returns all events programmed for the given date (type='p'),
+		or all the events written on the indicated date (type='w'). If
+		no date is given, today's events/written events are returned.'''
 		if date == '':
-			date = datetime.datetime.now().strftime("%Y-%m-%d")+'%'
-		c = self.conn.cursor()
-		c.execute('SELECT * FROM note WHERE rowid = ? AND event_date LIKE ?', (self.id,date,))
-		return c.fetchall()
+			date = '"'+datetime.datetime.now().strftime("%Y-%m-%d")+'%"'
+		else:
+			date ='"'+date+'%"'
+		if type == 'e':
+			type = 'event_date'
+		elif type == 'w':
+			type = 'writing_date'
+		else:
+			return
+		
+		self.cursor.execute('SELECT * FROM note WHERE  user_id = ? AND ? LIKE ?', (self.id,type,date,))
+		r = []
+		for n in self.cursor.fetchall():
+			r.append(note(n))
+		return r
+	
 	
 	def get_userid(self, username):
 		'''Returns the id of the given user. If the user does
 		not exist, it returns -1'''
-		c = self.conn.cursor()
-		c.execute('SELECT rowid FROM user WHERE name = ?', (username,))
-		id = c.fetchone()
+		self.cursor.execute('SELECT rowid FROM user WHERE name = ?', (username,))
+		id = self.cursor.fetchone()
 		if not id:
 			return -1
 		return int(id[0])
+	
 	
 	def new_event(self, title, content, event_date='', event_time='', date='date("now")', time='time("now")'):
 		'''Insert a new event in the calendar. Date and time
