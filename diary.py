@@ -1,17 +1,21 @@
 #!/usr/bin/python
 #################
-# Cmdiary v 1.0 #################################
+# Cmdiary v 0.1 #################################
 # A simple command line diary/agend/notes keeper#
 # or whatever you want to use it for.           #
 # It is based on a sqlite database.             #
 # Just few hours was spent on this, but any     #
 # suggestion, comment improvement or report will#
 # be happily appreciated.                       #
-# copyleft joker__<g.chers@gmail.com>           #
+# Copyleft joker__<g.chers@gmail.com>           #
 #################################################
 # file: diary.py
 # desc: sqlite database handler
-import sqlite3
+try:
+	import sqlite3
+except:
+	print 'Sqlite3 python module missing! This program needs sqlite3 to work.'
+	exit(-1)
 import datetime
 
 
@@ -109,22 +113,23 @@ class diary:
 		self.conn.commit()
 		
 	
-	def get_notes(self, type, date=''):
-		'''Returns all events programmed for the given date (type='p'),
-		or all the events written on the indicated date (type='w'). If
+	def get_notes(self, t, date=''):
+		'''Returns all events programmed for the given date (t='p'),
+		or all the events written on the indicated date (t='w'). If
 		no date is given, today's events/written events are returned.'''
 		if date == '':
-			date = '"'+datetime.datetime.now().strftime("%Y-%m-%d")+'%"'
+			date = ''+datetime.datetime.now().strftime("%Y-%m-%d")+'*'
 		else:
-			date ='"'+date+'%"'
-		if type == 'e':
-			type = 'event_date'
-		elif type == 'w':
-			type = 'writing_date'
+			date = date+'*'
+		
+		if t == 'e':
+			sqlreq = 'SELECT * FROM note WHERE  user_id = ? AND event_date GLOB ?'
+		elif t == 'w':
+			sqlreq = 'SELECT * FROM note WHERE  user_id = ? AND writing_date GLOB ?'
 		else:
 			return
 		
-		self.cursor.execute('SELECT * FROM note WHERE  user_id = ? AND ? LIKE ?', (self.id,type,date,))
+		self.cursor.execute(sqlreq, (self.id,date,))
 		r = []
 		for n in self.cursor.fetchall():
 			r.append(note(n))
@@ -141,10 +146,14 @@ class diary:
 		return int(id[0])
 	
 	
-	def new_event(self, title, content, event_date='', event_time='', date='date("now")', time='time("now")'):
+	def new_event(self, title, content, event_date='', event_time='', date='', time=''):
 		'''Insert a new event in the calendar. Date and time
 		represent the day of writing, and are set by default.'''
-		date += ' '+time
+		if date=='':
+			date = datetime.datetime.now().strftime("%Y-%m-%d")
+		else:
+			date += ' '+time
+		
 		if event_time != '':
 			event_date += ' '+event_time
 		try:
