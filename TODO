@@ -1,0 +1,34 @@
+Cmdiary 0.1 [ joker__ ]
+Here are few things to do. If you want to
+contribute, please mail me at
+<g.chers@gmail.com>.
+Any suggestion, fix or bug segnalation
+will be really appreciated.
+
+Note: for the release of 1.0 version,
+i want to satisfy at least the (1.0)
+requests.
+
+Fixes:
+[ ] Support of any Windows platform. (1.0)
+[ ] A nice installer, with setup.py
+[ ] Sql request formulation in diary.get_notes
+	was dramatic. It is still sqlinjectable.
+	You may want to fix this to keep your data
+	protected from the other computer users.
+[ ] The program was not written with a
+	"security in mind" approach. So it is NOT
+	to be trusted agains attacks.
+
+New functionalities:
+[ ] I wish other languages will be supported.
+	For languages handling, a class should be
+	created: it will have a database of
+	phrases in different languages.
+[ ] Possibility to delete the user's note. (1.0)
+[ ] Database has a field for the user's
+	birthday. It would be nice if the program
+	printed 'Happy birthday', on the user's
+	birth day. (1.0)
+[ ] Interfacing the calendar to other
+	calendars (e.g. the google's one)
