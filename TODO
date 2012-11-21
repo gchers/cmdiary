@@ -32,3 +32,6 @@ New functionalities:
 	birth day. (1.0)
 [ ] Interfacing the calendar to other
 	calendars (e.g. the google's one)
+[ ] Recurrent events (as friends' birthdays,
+	weekly appointments...)
+

@@ -16,7 +16,7 @@
 # desc: non graphic UI. Interfaces with cmdiary.py
 #		and show informations to the user.
 import os
-from cmdiary import *
+#from cmdiary import *
 from diary import note
 
 version = 'Cmdiary version 0.1.'
