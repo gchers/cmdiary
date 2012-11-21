@@ -1,0 +1,154 @@
+#!/usr/bin/python
+#################
+# Cmdiary v 0.1 #################################
+# A simple command line diary/agend/notes keeper#
+# or whatever you want to use it for.           #
+# It is based on a sqlite database.             #
+# Few hours was spent on this, and any			#
+# suggestion, comment improvement or fix will	#
+# be really appreciated.                        #
+# If you want to contribute, first look at the	#
+# TODO file.									#
+#												#
+# Copyleft joker__<g.chers@gmail.com>           #
+#################################################
+# file: main.py
+# desc: the main class, which handles the command
+#       line UI and the diary itself
+import threading
+import datetime
+import getpass
+import sys
+import os
+#from cmdiary import *
+from cmdiary.diary import *
+from cmdiary import show
+
+class cmdiary(threading.Thread):
+	'''This is the main class. Handles a diary objects,
+	and uses show.py to show the contents to the user
+	by a non graphic UI.'''
+	def __init__(self, dbname, username):
+		threading.Thread.__init__(self)
+		try:
+			self.diary = diary(dbname, username)
+		except Exception as e:
+			print e
+			exit(0)
+	
+	
+	def goto_date(self, type):
+		'''Asks for what date-date range search for and shows
+		all events of that day.'''
+		date = show.calendar()
+
+		if date:
+			for evt in self.diary.get_notes(type, date):
+				show.print_event(evt)
+		else:
+			print 'No date given.'
+	
+	
+	def goto_event(self):
+		self.goto_date('e')
+	
+
+	def goto_note(self):
+		self.goto_date('w')
+	
+	
+	def new_note(self):
+		'''Insert a new note.'''
+		title = raw_input('Title: ')
+		content = raw_input()
+		print 'Are you going to associate it to a date? Set a date! (else just "Enter")' # time?
+		evt_date = show.calendar()
+		if self.diary.new_event(title, content, evt_date):
+			print 'Your note was added.'
+		else:
+			print 'Something were wrong...so sorry man.'
+	
+		
+	def prompt(self):
+		'''Simply prompts all today's events
+		and then quits.'''
+		print 'What\'s happening today?'
+		notes = self.diary.get_notes('e')
+		if len(notes) == 0:
+			print 'No events were programmed for today. Feel free to do what you want.'
+			return
+		for evt in notes:
+			show.print_event(evt)
+		
+	def run(self):
+		'''UI'''
+		# The following statement "functions[s]()" referred to the
+		# array "functions", emulates a switch/case-of
+		# under Python. It is a really nice piece of code, and here
+		# is where I got it from:
+		# http://simonwillison.net/2004/may/7/switch/
+		#
+		functions = {
+				'?' : ("Cannot call this directly.", 'Show this help.'),
+				'p' : (self.prompt, 'Prompt. This is the default function: it shows all the events programmed for today.'),
+				'e' : (self.goto_event, 'Show all the events programmed for one day.'),
+				'w' : (self.goto_note, 'Show all the notes-events written on the specified date.'),
+				'n' : (self.new_note, 'Create a new note-event.'),
+				'x' : (self.stop, 'Exit from diary.')
+				}
+		
+		show.welcome()
+		
+		self.running = True
+		while self.running:
+			try:
+				s = raw_input("> ");
+				if s == '?':
+					show.functions_help(functions)
+				else:
+					functions[s][0]()
+			except EOFError:
+				exit(0)
+			except Exception as e:
+				show.functions_help(functions)
+				print e
+				pass
+	
+	def stop(self):
+		'''Ends the while cycle if running.'''
+		self.running = False
+
+
+def main():
+	global cmdiary
+	home	 = os.getenv('HOME')
+	dbname = home + '/.cmdiary.db'
+	username = getpass.getuser()
+	
+	try:
+		cmdiary = cmdiary(dbname, username)
+	except Exception as e:
+		print 'An error occurred.'
+		print e
+		exit(-1)
+	
+	flags = {
+			'-i': (cmdiary.start, 'Interactive mode.'),
+			'-h': ('Cannot call this directly', 'Show this help.')
+	}
+	
+	if len(sys.argv) > 1:
+		if sys.argv[1] == '-h':
+			show.help(flags)
+		elif flags.has_key(sys.argv[1]):
+			flags[sys.argv[1]][0]()
+		else:
+			show.help(flags)
+	else:
+		cmdiary.prompt() 		# just prompt today's events
+	
+	#print 'Have a nice day, Cmdiary.'
+
+
+if __name__ == "__main__":
+	main()
